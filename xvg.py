@@ -1,7 +1,7 @@
 import re
 import numpy as np
 
-def read_xvg(path, var_names=None):
+def read_xvg(path, var_names=None, unpack=False):
     """
     Reads xvg file, returns data as an instance of numpy.ndarray. If var_names
     are specified, only the respective columns are included; the ndarray columns
@@ -16,32 +16,19 @@ def read_xvg(path, var_names=None):
     """
 
     # Initialize the xvg reader.
-    f = XvgFile(path)
+    f = XvgFile(path, var_names)
 
-    # If variable names are specified
-    if var_names is not None:
-        # For each v in var_names get its position (column number) inside the
-        # full data array.
-        try:
-            indices = [f.variables.index(v) for v in var_names if v in f.variables]
-        except ValueError as e:
-            match = re.match("'(.*)' is not in list", str(e))
-            if match:
-                raise ValueError("Variable '{}' was not found in the xvg file.")
-            else:
-                raise
+    data = f.data
 
-        # Extract columns of interest from the file data array.
-        data = f.data[:,indices]
-    else:
-        data = f.data
+    if unpack is True:
+        data = np.transpose(data)
 
     return data
 
 
 class XvgFile(object):
 
-    def __init__(self, path):
+    def __init__(self, path, var_names):
 
         self._data = None
 
@@ -51,16 +38,13 @@ class XvgFile(object):
         # Read file header
         self.read_header()
 
-        # Load data
-        self.data = self.load_data(skiprows=self.data0_index)
-
         # Get variable info
         self.variable_info()
 
     @property
     def data(self):
         if self._data is not None:
-            self._data = self.load_data(skiprows=self.data0_index)
+            self._data = self.load_data()
 
         return self._data
 
@@ -73,7 +57,29 @@ class XvgFile(object):
         Loads data using the numpy.loadtxt.function
         """
 
-        return np.loadtxt(str(self.path), comments={'#', '@', '&'}, **kwargs)
+        # If variable names are specified
+        if var_names is not None:
+            # For each v in var_names get its position (column number) inside the
+            # full data array.
+            try:
+                indices = [self.variables.index(v) for v in var_names if v in self.variables]
+            except ValueError as e:
+                match = re.match("'(.*)' is not in list", str(e))
+                if match:
+                    raise ValueError("Variable '{}' was not found in the xvg file.")
+                else:
+                    raise
+
+        else:
+            # Read all columns
+            indices = None
+
+        return np.loadtxt(
+            str(self.path),
+            comments={'#', '@', '&'},
+            skiprows=self.data0_index,
+            usecols=indices,
+            **kwargs)
 
     def variable_info(self):
         """
@@ -140,15 +146,15 @@ class XvgFile(object):
         var_ind_sorted = np.argsort([v['index'] for v in variables])
         variables = [variables[i]['description'] for i in var_ind_sorted]
 
-        # Do some consistency checking.
-        if not len(variables) == self.data.shape[1]:
-
-            msg = "Not all variables were found!"
-                + "Expected {}, found {}: {}".format(
-                    self.data.shape[1], len(variables), variables)
-                + str(self.path)
-
-            raise RuntimeError(msg)
+        # # Do some consistency checking.
+        # if not len(variables) == self.data.shape[1]:
+        #
+        #     msg = "Not all variables were found!"
+        #         + "Expected {}, found {}: {}".format(
+        #             self.data.shape[1], len(variables), variables)
+        #         + str(self.path)
+        #
+        #     raise RuntimeError(msg)
 
         # Store the variables array.
         self.variables = variables
