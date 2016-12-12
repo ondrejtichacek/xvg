@@ -260,9 +260,7 @@ class XvgFile(object):
         """
         Reads header of xvg file -- lines starting with #, @, or &.
         Creates two arrays named 'comments' and 'plotdirectives', that contain
-        lines staring with # and @, respectively. '&' lines are not yet
-        implemented. The function also determines the index of the first data
-        line.
+        lines staring with # and @, respectively.
         """
 
         # Init arrays
@@ -286,8 +284,7 @@ class XvgFile(object):
                     self.plotdirectives.append(ln)
 
                 elif ln.startswith("&"):
-                    raise RuntimeError(
-                        "Lines starting with '&' are not implemented yet. Sorry!")
+                    pass
 
                 # Prevent empty (or whitespace-only) lines to be recognised as
                 # data lines.

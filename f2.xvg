@@ -1,0 +1,52 @@
+@with g0
+@    title "Cumulative sum number of Contacts < 0.3 nm"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "Cumulative sum contacts"
+@    s0 type xy
+@    s0 legend  "res0_ACE"
+@    s1 type xy
+@    s1 legend  "res1_ALA"
+@    s2 type xy
+@    s2 legend  "res2_TRP"
+@target G0.S0
+@type xy
+0 0
+100 0
+200 0
+300 0
+400 0
+500 0
+600 0
+700 0
+800 0
+900 0
+1000 0
+&
+@target G0.S1
+@type xy
+0 10
+100 10
+200 10
+300 10
+400 10
+500 10
+600 10
+700 10
+800 10
+900 10
+1000 10
+&
+@target G0.S2
+@type xy
+0 20
+100 20
+200 20
+300 20
+400 20
+500 20
+600 20
+700 20
+800 20
+900 20
+1000 20
+&
