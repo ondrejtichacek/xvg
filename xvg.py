@@ -32,6 +32,12 @@ class XvgFile(object):
     def __init__(self, path, var_names):
 
         self._data = None
+
+        assert var_names is None \
+            or type(var_names) is tuple \
+            or type(var_names) is list, \
+            "The variable var_names must be either a list, a tuple or None."
+
         self.var_names = var_names
 
         # Store file path.

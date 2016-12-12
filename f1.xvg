@@ -1,0 +1,24 @@
+@    title "Secondary Structure"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "Number of Residues"
+@TYPE xy
+@ s0 legend "Structure"
+@ s1 legend "Coil"
+@ s2 legend "B-Sheet"
+@ s3 legend "B-Bridge"
+@ s4 legend "Bend"
+@ s5 legend "Turn"
+@ s6 legend "A-Helix"
+@ s7 legend "5-Helix"
+@ s8 legend "3-Helix"
+       0   107    21     8     0    20     9    90     0     0
+     100   105    22     4     2    21    11    88     0     0
+     200   107    24     4     2    17    11    90     0     0
+     300   109    19     8     0    20    12    89     0     0
+     400   106    25     4     2    17    11    89     0     0
+     500   107    28     4     2    13    12    89     0     0
+     600   107    22     8     0    19    16    83     0     0
+     700   107    24     8     0    17    13    86     0     0
+     800   108    24     4     2    16    13    89     0     0
+     900   109    25     4     2    14    12    91     0     0
+    1000   109    23     8     0    16    11    90     0     0
