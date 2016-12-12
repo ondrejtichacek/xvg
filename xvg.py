@@ -1,5 +1,6 @@
 import re
 import numpy as np
+import pprint
 
 def read_xvg(path, var_names=None, unpack=False):
     """
@@ -31,6 +32,7 @@ class XvgFile(object):
     def __init__(self, path, var_names):
 
         self._data = None
+        self.var_names = var_names
 
         # Store file path.
         self.path = path
@@ -43,7 +45,7 @@ class XvgFile(object):
 
     @property
     def data(self):
-        if self._data is not None:
+        if self._data is None:
             self._data = self.load_data()
 
         return self._data
@@ -58,11 +60,11 @@ class XvgFile(object):
         """
 
         # If variable names are specified
-        if var_names is not None:
+        if self.var_names is not None:
             # For each v in var_names get its position (column number) inside the
             # full data array.
             try:
-                indices = [self.variables.index(v) for v in var_names if v in self.variables]
+                indices = [self.variables.index(v) for v in self.var_names if v in self.variables]
             except ValueError as e:
                 match = re.match("'(.*)' is not in list", str(e))
                 if match:
@@ -74,12 +76,80 @@ class XvgFile(object):
             # Read all columns
             indices = None
 
-        return np.loadtxt(
-            str(self.path),
-            comments={'#', '@', '&'},
-            skiprows=self.data0_index,
-            usecols=indices,
-            **kwargs)
+        ncols = len(np.fromstring(self.data0, sep=' '))
+
+        if ncols == len(self.variables):
+            return np.loadtxt(
+                str(self.path),
+                comments={'#', '@', '&'},
+                skiprows=self.data0_index,
+                usecols=indices,
+                **kwargs)
+        else:
+            return self.twocolloader(indices)
+
+    def twocolloader(self, indices):
+
+        with open(str(self.path), 'r') as fi:
+
+            variables = []
+
+            # Read file line by line
+            for i, ln in enumerate(fi):
+                if ln.startswith('#'):
+                    pass
+                elif ln.startswith('@'):
+                    match = re.match(r'@target\s+[Gg]?(\d*)\.?[Ss](\d+)', ln)
+                    if match:
+                        var_index = int(match.group(2))
+                        var_x = []
+                        var_y = []
+
+                        if indices is None or var_index + 1 in indices:
+                            pass_this_var = False
+                        else:
+                            pass_this_var = True
+
+                elif ln.startswith('&'):
+
+                    if not pass_this_var:
+                        variables.append({
+                            'index': var_index,
+                            'x': var_x,
+                            'y': var_y,
+                        })
+
+                    var_x = []
+                    var_y = []
+                else:
+                    if not pass_this_var:
+                        v = np.fromstring(ln, sep=' ')
+                        var_x.append(v[0])
+                        var_y.append(v[1])
+
+        if indices is not None:
+            var_ind = [v['index'] for v in variables]
+            variable_array = []
+
+            for i in indices:
+                if i == 0:
+                    variable_array.append(variables[0]['x'])
+                else:
+                    variable_array.append(variables[var_ind.index(i-1)]['y'])
+        else:
+            variable_array = [variables[0]['x']]
+            for v in variables:
+                variable_array.append(v['y'])
+
+        m = len(variable_array[0])
+        n = len(variable_array)
+
+        data = np.empty((m,n))
+
+        for i, v in enumerate(variable_array):
+            data[:,i] = v
+
+        return data
 
     def variable_info(self):
         """
@@ -116,19 +186,19 @@ class XvgFile(object):
 
             # If none of the previous matches was successfull and the internal
             # xvg type is 1, don't waste any more time of this line.
-            if self.xvg_type == 1:
-                continue
+            # if self.xvg_type == 1:
+                # continue
 
             # But if it's an xvg file of an internal type 2, we neet to try one
             # more match.
-            elif self.xvg_type == 2:
+            # elif self.xvg_type == 2:
 
-                match = re.match(r's(\d+)\s+legend\s+"(.*)"', ln)
-                if match:
-                    variables.append(
-                        {'index': int(match.group(1)),
-                         'description': match.group(2)})
-                continue
+            match = re.match(r's(\d+)\s+legend\s+"(.*)"', ln)
+            if match:
+                variables.append(
+                    {'index': int(match.group(1)),
+                     'description': match.group(2)})
+            continue
 
         # Append the independent variable. Since it is always in the
         # first column, set its index to -1 (will be sorted later).
@@ -137,7 +207,8 @@ class XvgFile(object):
              'description': self.xaxis})
 
         # In the end, add the dependent variable.
-        if self.xvg_type == 1:
+        # if self.xvg_type == 1:
+        if len(variables) == 1:
             variables.append(
                 {'index': 0,
                  'description': self.yaxis})
@@ -172,12 +243,14 @@ class XvgFile(object):
         variables are obtained using @s0, @s1, legends.
         """
 
-        if self.data.shape[1] < 2:
+        ncols = len(np.fromstring(self.data0, sep=' '))
+
+        if ncols < 2:
             raise ValueError(
                 "Expected to find at least two data columns, found {}.".format(
                     self.data.shape))
 
-        elif self.data.shape[1] == 2:
+        elif ncols == 2:
             return 1
 
         else:
@@ -224,9 +297,11 @@ class XvgFile(object):
                 # If none of the previous applies, the line contains data.
                 else:
 
-                    # If it is the first encountered data line, log its index.
+                    # If it is the first encountered data line, log the line and
+                    # its index.
                     if self.data0_index is None:
                         self.data0_index = i
+                        self.data0 = ln
 
                     # If we assume, that the header is only on top of the file,
                     # we can break the file-reading.
