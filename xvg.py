@@ -10,7 +10,8 @@ def read_xvg(path, var_names=None, unpack=False):
 
     Args:
         path: file path (convertible to str)
-        var_names: variable names to be loaded, order matters (array of strings)
+        var_names: variable names to be loaded, order matters (list or tuple of strings)
+        unpack: see numpy.loadtxt
 
     Returns:
         data: m x n array of n variables (numpy.ndarray)
@@ -30,6 +31,11 @@ def read_xvg(path, var_names=None, unpack=False):
 class XvgFile(object):
 
     def __init__(self, path, var_names):
+        """
+        Args:
+            path: file path (convertible to str)
+            var_names: variable names to be loaded, order matters (array of strings)
+        """
 
         self._data = None
 
@@ -62,7 +68,7 @@ class XvgFile(object):
 
     def load_data(self, **kwargs):
         """
-        Loads data using the numpy.loadtxt.function
+        Loads data using the numpy.loadtxt function or using the twocolloader.
         """
 
         # If variable names are specified
@@ -82,8 +88,11 @@ class XvgFile(object):
             # Read all columns
             indices = None
 
+        # Get number of columns of data rows (assume its consistent with row 0).
         ncols = len(np.fromstring(self.data0, sep=' '))
 
+        # If the number of columns is equal to number of variables, the file can
+        # be read using the numpy.loadtxt function.
         if ncols == len(self.variables):
             return np.loadtxt(
                 str(self.path),
@@ -91,6 +100,9 @@ class XvgFile(object):
                 skiprows=self.data0_index,
                 usecols=indices,
                 **kwargs)
+
+        # Otherwise, the variables are written one after another separated by
+        # the symbol '&'. Then a custom reader must be used.
         else:
             return self.twocolloader(indices)
 
