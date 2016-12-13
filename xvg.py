@@ -30,6 +30,11 @@ def read_xvg(path, var_names=None, unpack=False):
 
     data = f.data
 
+    # Make sure that the returned array has both dimensions specified.
+    # E.g. an array of a shape (123,) is converted to ndarray (123,1,)
+    if len(data.shape) == 1:
+        data = data.reshape((-1,1,))
+
     if unpack is True:
         data = np.transpose(data)
 
