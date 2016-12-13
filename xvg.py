@@ -10,12 +10,20 @@ def read_xvg(path, var_names=None, unpack=False):
 
     Args:
         path: file path (convertible to str)
-        var_names: variable names to be loaded, order matters (list or tuple of strings)
+        var_names: variable names to be loaded (list or tuple of strings,
+        string, None). Order matters.
         unpack: see numpy.loadtxt
 
     Returns:
         data: m x n array of n variables (numpy.ndarray)
     """
+
+    # Allow some more flexibility in var_names
+    if type(var_names) is str:
+        if var_names == "":
+            var_names = None
+        else:
+            var_names = [var_names]
 
     # Initialize the xvg reader.
     f = XvgFile(path, var_names)
